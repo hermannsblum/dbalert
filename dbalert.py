@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
 import click
+from os import environ
 #from joblib import Memory
 
 #memory = Memory('/tmp')
@@ -13,16 +14,20 @@ TIMEFORMAT = '%d.%m.%y, %H:%M'
 
 #@memory.cache
 def get_data(station_id, lookahead=180):
+  # first get the name of the station
+  r = requests.get(f'https://bahn.expert/api/stopPlace/v1/{station_id}')
+  station = r.json()['name']
   r = requests.get(
-      f'https://marudor.de/api/iris/v2/abfahrten/8000207?lookahead={lookahead}&lookbehind=0'
+      f'https://marudor.de/api/iris/v2/abfahrten/{station_id}?lookahead={lookahead}&lookbehind=0'
   )
-  return r.json()
+  return {'station_name': station, **r.json()}
 
 
 def get_text(station_id, time_to_station, min_delay, lookahead):
   print('Getting station data...')
   d = get_data(station_id, lookahead=lookahead)
-  print(f"Checking {len(d['departures'])} departures...")
+  print(
+      f"Checking {len(d['departures'])} departures from {d['station_name']}...")
   out = ""
   for t in d['departures']:
     if t['train']['type'] not in ('IC', 'EC', 'ICE'):
@@ -38,15 +43,16 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
     if departure < (datetime.now() + timedelta(minutes=time_to_station)):
       continue
     out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nGleis {t['departure']['platform']}\n\n"
-  return out
+  return out, d['station_name']
 
 
 def validate_smtp(ctx, param, value):
   """Either all or none smtp parameters should be set."""
-  if value is None and any(
+  if (value is None) and any(
       k.startswith('smtp') and ctx.params[k] for k in ctx.params):
     raise click.BadOptionUsage(param,
                                "Either all or no SMTP options need to be set.")
+  return str(value)
 
 
 @click.command()
@@ -57,23 +63,41 @@ def validate_smtp(ctx, param, value):
 @click.option(
     '--time-to-station',
     default=30,
+    envvar='DBALERT_TIMETOSTATION',
     help=
     '[minutes] Time it takes from user to the station. Only trains with an estimated departure at least this time ahead will be considered.'
 )
 @click.option(
     '--min-delay',
     default=60,
+    envvar='DBALERT_MINDELAY',
     help='[minutes] Only trains with at least this delay will be considered')
 @click.option(
     '--lookahead',
     default=180,
+    envvar='DBALERT_LOOKAHEAD',
     help=
     '[minutes] Considers all trains regularly departing in the next X minutes.')
-@click.option('--smtp-from', type=str, callback=validate_smtp)
-@click.option('--smtp-to', type=str, callback=validate_smtp)
-@click.option('--smtp-server', type=str, callback=validate_smtp)
-@click.option('--smtp-username', type=str, callback=validate_smtp)
-@click.option('--smtp-password', type=str, callback=validate_smtp)
+@click.option('--smtp-from',
+              type=str,
+              envvar='DBALERT_SMTP_FROM',
+              callback=validate_smtp)
+@click.option('--smtp-to',
+              type=str,
+              envvar='DBALERT_SMTP_TO',
+              callback=validate_smtp)
+@click.option('--smtp-server',
+              type=str,
+              envvar='DBALERT_SMTP_SERVER',
+              callback=validate_smtp)
+@click.option('--smtp-username',
+              type=str,
+              envvar='DBALERT_SMTP_USERNAME',
+              callback=validate_smtp)
+@click.option('--smtp-password',
+              type=str,
+              envvar='DBALERT_SMTP_PASSWORD',
+              callback=validate_smtp)
 def dbalert(
     station_id,
     time_to_station,
@@ -86,10 +110,10 @@ def dbalert(
     smtp_password,
 ):
 
-  text = get_text(station_id=station_id,
-                  time_to_station=time_to_station,
-                  min_delay=min_delay,
-                  lookahead=lookahead)
+  text, station = get_text(station_id=station_id,
+                           time_to_station=time_to_station,
+                           min_delay=min_delay,
+                           lookahead=lookahead)
   if len(text) == 0:
     print('No delays.')
     return
@@ -99,8 +123,8 @@ def dbalert(
     return
 
   msg = EmailMessage()
-  msg.set_content(ctx.obj['text'])
-  msg['Subject'] = f'Verspätungen in Köln Hbf'
+  msg.set_content(text)
+  msg['Subject'] = f'Verspätungen in {station}'
   msg['From'] = smtp_from
   msg['To'] = smtp_to
 
