@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
 import click
-from os import environ
+from os import path
 #from joblib import Memory
 
 #memory = Memory('/tmp')
@@ -98,6 +98,13 @@ def validate_smtp(ctx, param, value):
               type=str,
               envvar='DBALERT_SMTP_PASSWORD',
               callback=validate_smtp)
+@click.option(
+    '--passwords-from-file',
+    default=False,
+    envvar='DBALERT_PASSWORDSFROMFILE',
+    help=
+    'If true, password options are interpreted as filepaths from where to read the password itself. This allows to pass passwords e.g. via docker secrets.'
+)
 def dbalert(
     station_id,
     time_to_station,
@@ -108,7 +115,14 @@ def dbalert(
     smtp_server,
     smtp_username,
     smtp_password,
+    passwords_from_file,
 ):
+  # read smtp password from file
+  if smtp_password and passwords_from_file:
+    filepath = smtp_password
+    assert path.exists(filepath)
+    with open(filepath, 'r') as f:
+      smtp_password = f.read()
 
   text, station = get_text(station_id=station_id,
                            time_to_station=time_to_station,
