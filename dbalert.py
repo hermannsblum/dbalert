@@ -2,6 +2,7 @@ import requests
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 import smtplib
+from email.utils import formataddr
 from email.message import EmailMessage
 import click
 from os import path
@@ -139,7 +140,7 @@ def dbalert(
   msg = EmailMessage()
   msg.set_content(text)
   msg['Subject'] = f'Verspätungen in {station}'
-  msg['From'] = smtp_from
+  msg['From'] = formataddr(('DB Alert', smtp_from))
   msg['To'] = smtp_to
 
   # Send the message via our own SMTP server.
