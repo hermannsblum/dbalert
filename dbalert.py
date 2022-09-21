@@ -31,7 +31,7 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
       f"Checking {len(d['departures'])} departures from {d['station_name']}...")
   out = ""
   for t in d['departures']:
-    if t['train']['type'] not in ('IC', 'EC', 'ICE'):
+    if t['train']['type'] not in ('IC', 'EC', 'ICE', 'ECE'):
       continue
     if 'arrival' not in t or t['arrival'].get('delay', 0) < min_delay:
       continue
