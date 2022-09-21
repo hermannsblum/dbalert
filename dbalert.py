@@ -59,6 +59,7 @@ def validate_smtp(ctx, param, value):
 @click.command()
 @click.option('--station-id',
               default='8000207',
+              envvar='DBALERT_STATIONID',
               show_default=True,
               help='station to query for delayed trains')
 @click.option(
