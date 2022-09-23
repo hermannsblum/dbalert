@@ -43,7 +43,7 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
     departure = parse(t['departure']['time']).replace(tzinfo=None)
     if departure < (datetime.now() + timedelta(minutes=time_to_station)):
       continue
-    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nGleis {t['departure']['platform']}\n\n"
+    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n\n"
   return out, d['station_name']
 
 
