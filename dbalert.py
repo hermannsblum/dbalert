@@ -19,7 +19,7 @@ def get_data(station_id, lookahead=180):
   r = requests.get(f'https://bahn.expert/api/stopPlace/v1/{station_id}')
   station = r.json()['name']
   r = requests.get(
-      f'https://marudor.de/api/iris/v2/abfahrten/{station_id}?lookahead={lookahead}&lookbehind=0'
+      f'https://bahn.expert/api/iris/v2/abfahrten/{station_id}?lookahead={lookahead}&lookbehind=0'
   )
   return {'station_name': station, **r.json()}
 
