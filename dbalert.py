@@ -24,6 +24,10 @@ def get_data(station_id, lookahead=180):
   return {'station_name': station, **r.json()}
 
 
+def log_train(t, comment=''):
+  print(f'{t['train']['name']}, delay {t['arrival'].get('delay', 0)}: {comment}')
+
+
 def get_text(station_id, time_to_station, min_delay, lookahead):
   print('Getting station data...')
   d = get_data(station_id, lookahead=lookahead)
@@ -34,14 +38,18 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
     if t['train']['type'] not in ('IC', 'EC', 'ICE', 'ECE'):
       continue
     if 'arrival' not in t or t['arrival'].get('delay', 0) < min_delay:
+      log_train(t, 'too small delay')
       continue
     if t.get('cancelled', False):
+      log_train(t, 'cancelled')
       continue
     if 'departure' not in t:
+      log_train(t, 'arrival only')
       continue
     scheduled = parse(t['departure']['scheduledTime']).replace(tzinfo=None)
     departure = parse(t['departure']['time']).replace(tzinfo=None)
     if departure < (datetime.now() + timedelta(minutes=time_to_station)):
+      log_train(t, 'departure too soon')
       continue
     out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n\n"
   return out, d['station_name']
@@ -125,6 +133,8 @@ def dbalert(
     assert path.exists(filepath)
     with open(filepath, 'r') as f:
       smtp_password = f.read()
+
+  print(datetime.now())
 
   text, station = get_text(station_id=station_id,
                            time_to_station=time_to_station,
