@@ -25,7 +25,8 @@ def get_data(station_id, lookahead=180):
 
 
 def log_train(t, comment=''):
-  print(f"{t['train']['name']}, delay {t['arrival'].get('delay', 0)}: {comment}")
+  delay = t.get('arrival', t.get('departure', dict(delay='nan'))).get('delay', 'nan')
+  print(f"{t['train']['name']}, delay {delay}: {comment}")
 
 
 def get_text(station_id, time_to_station, min_delay, lookahead):
@@ -37,7 +38,8 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
   for t in d['departures']:
     if t['train']['type'] not in ('IC', 'EC', 'ICE', 'ECE'):
       continue
-    if 'arrival' not in t or t['arrival'].get('delay', 0) < min_delay:
+    delay = t.get('arrival', t.get('departure', dict(delay=0))).get('delay', 0)
+    if delay < min_delay:
       log_train(t, 'too small delay')
       continue
     if t.get('cancelled', False):
