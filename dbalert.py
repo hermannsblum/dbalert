@@ -26,7 +26,8 @@ def get_data(station_id, lookahead=180):
 
 def log_train(t, comment=''):
   delay = t.get('arrival', t.get('departure', dict(delay='nan'))).get('delay', 'nan')
-  print(f"{t['train']['name']}, delay {delay}: {comment}")
+  departure = parse(t['departure']['time']).replace(tzinfo=None)
+  print(f"{t['train']['name']}, delay {delay}, departure {departure.strftime(TIMEFORMAT)}: {comment}")
 
 
 def get_text(station_id, time_to_station, min_delay, lookahead):
