@@ -53,7 +53,7 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
       continue
     scheduled = parse(t['departure']['scheduledTime']).replace(tzinfo=None)
     departure = parse(t['departure']['time']).replace(tzinfo=None)
-    if departure < (datetime.now() + timedelta(minutes=time_to_station)):
+    if time_to_station > 0 and departure < (datetime.now() + timedelta(minutes=time_to_station)):
       log_train(t, 'departure too soon')
       continue
     out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n\n"
@@ -77,7 +77,7 @@ def validate_smtp(ctx, param, value):
               help='station to query for delayed trains')
 @click.option(
     '--time-to-station',
-    default=30,
+    default=-1,
     envvar='DBALERT_TIMETOSTATION',
     help=
     '[minutes] Time it takes from user to the station. Only trains with an estimated departure at least this time ahead will be considered.'
