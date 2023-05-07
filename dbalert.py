@@ -52,7 +52,9 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
       log_train(t, 'arrival only')
       continue
     scheduled = parse(t['departure']['scheduledTime']).replace(tzinfo=None)
-    departure = parse(t['departure']['time']).replace(tzinfo=None)
+    # currently the departure info from bahn.expert seems unreliable. We rather take schedule + delay
+    # departure = parse(t['departure']['time']).replace(tzinfo=None)
+    departure = scheduled + timedelta(minutes=delay)
     if time_to_station > 0 and departure < (datetime.now() + timedelta(minutes=time_to_station)):
       log_train(t, 'departure too soon')
       continue
