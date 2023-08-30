@@ -150,9 +150,9 @@ def dbalert(
   if len(text) == 0:
     print('No delays.')
     return
+  print('sending message:')
+  print('\n' + text)
   if smtp_server is None:
-    # print instead of sending email
-    print('\n' + text)
     return
 
   msg = EmailMessage()
