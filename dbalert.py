@@ -53,12 +53,17 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
       continue
     scheduled = parse(t['departure']['scheduledTime']).replace(tzinfo=None)
     # currently the departure info from bahn.expert seems unreliable. We rather take schedule + delay
-    # departure = parse(t['departure']['time']).replace(tzinfo=None)
-    departure = scheduled + timedelta(minutes=delay)
+    departure = parse(t['departure']['time']).replace(tzinfo=None)
+    # departure = scheduled + timedelta(minutes=delay)
     if time_to_station > 0 and departure < (datetime.now() + timedelta(minutes=time_to_station)):
       log_train(t, 'departure too soon')
       continue
-    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n\n"
+    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n"
+    if 'messages' in t and 'delay' in t['messages']:
+      for i, reason in enumerate(t['messages']['delay']):
+        timestamp = parse(reason['timestamp']).replace(tzinfo=None)
+        out += f"Grund {i+1}, {timestamp.strftime(TIMEFORMAT)}: {reason['text']}\n"
+    out += '\n'
   return out, d['station_name']
 
 
