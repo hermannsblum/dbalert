@@ -58,7 +58,7 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
     if time_to_station > 0 and departure < (datetime.now() + timedelta(minutes=time_to_station)):
       log_train(t, 'departure too soon')
       continue
-    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {t['arrival']['delay']} min\nGleis {t['departure']['platform']}\n"
+    out += f"Zug: {t['train']['name']}\nZiel: {t['destination']}\nAbfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\nAbfahrt gem. Realität {departure.strftime(TIMEFORMAT)}\nAktuelle Verspätung:  {delay} min\nGleis {t['departure']['platform']}\n"
     if 'messages' in t and 'delay' in t['messages']:
       for i, reason in enumerate(t['messages']['delay']):
         timestamp = parse(reason['timestamp']).replace(tzinfo=None)
