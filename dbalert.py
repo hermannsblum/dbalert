@@ -12,6 +12,11 @@ from os import path
 
 TIMEFORMAT = '%d.%m.%y, %H:%M'
 
+BAD_DELAY_REASONS = [
+  'Notarzteinsatz',
+  'Personen',
+]
+
 
 #@memory.cache
 def get_data(station_id, lookahead=180):
@@ -58,6 +63,19 @@ def get_text(station_id, time_to_station, min_delay, lookahead):
     if time_to_station > 0 and departure < (datetime.now() + timedelta(minutes=time_to_station)):
       log_train(t, 'departure too soon')
       continue
+
+    # check for valid delays
+    bad_delay_reason = False
+    if 'messages' in t and 'delay' in t['messages']:
+      for i, reason in enumerate(t['messages']['delay']):
+        for bad_cause in BAD_DELAY_REASONS:
+          if bad_cause in reason['text']:
+            bad_delay_reason = True
+            log_train(t, f"bad delay cause: {reason['text']}")
+            break
+    if bad_delay_reason:
+      continue
+
     out += f"Zug: {t['train']['name']}\n"
     out += f"Ziel: {t['destination']}\n"
     out += f"Abfahrt gem. Fahrplan {scheduled.strftime(TIMEFORMAT)}\n"
