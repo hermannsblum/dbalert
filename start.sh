@@ -1,4 +1,8 @@
 # iterate through comma-separated list of schedule variables
+
+# remove old crontab
+crontab -r
+
 Backup_of_internal_field_separator=$IFS
 IFS=,
 for station in $DBALERT_STATIONIDS; do
